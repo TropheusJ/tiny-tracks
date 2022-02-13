@@ -1,0 +1,84 @@
+{
+  "variants": {
+    "shape=north_south,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track"
+    },
+    "shape=east_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track",
+      "y": 90
+    },
+    "shape=north_east,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_curved"
+    },
+    "shape=south_east,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 90
+    },
+    "shape=north_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 270
+    },
+    "shape=south_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 180
+    },
+    "shape=north_east_south,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_t"
+    },
+    "shape=east_south_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 90
+    },
+    "shape=north_south_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 180
+    },
+    "shape=north_east_west,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 270
+    },
+    "shape=cross,waterlogged=false": {
+      "model": "tiny_tracks:block/simple_track_cross"
+    },
+    "shape=north_south,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track"
+    },
+    "shape=east_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track",
+      "y": 90
+    },
+    "shape=north_east,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_curved"
+    },
+    "shape=south_east,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 90
+    },
+    "shape=north_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 270
+    },
+    "shape=south_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_curved",
+      "y": 180
+    },
+    "shape=north_east_south,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_t"
+    },
+    "shape=east_south_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 90
+    },
+    "shape=north_south_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 180
+    },
+    "shape=north_east_west,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_t",
+      "y": 270
+    },
+    "shape=cross,waterlogged=true": {
+      "model": "tiny_tracks:block/simple_track_cross"
+    }
+  }
+}

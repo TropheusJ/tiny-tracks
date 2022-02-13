@@ -1,25 +1,28 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "tiny_tracks",
   "version": "${version}",
-  "name": "Example Mod",
+  "name": "Tiny Tracks",
   "description": "This is an example description! Tell everyone what your mod is about!",
   "authors": [
     "Tropheus Jay"
   ],
   "contact": {
-    "sources": "https://github.com/TropheusJ/fabric-example-mod"
+    "sources": "https://github.com/TropheusJ/tiny-tracks"
   },
   "license": "MIT",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/tiny_tracks/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.tropheusj.modid.ExampleMod"
+      "io.github.tropheusj.tiny_tracks.TinyTracks"
+    ],
+    "fabric-datagen": [
+      "io.github.tropheusj.tiny_tracks.TinyTracksData"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "tiny_tracks.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
