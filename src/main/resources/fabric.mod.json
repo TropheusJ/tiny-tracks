@@ -17,6 +17,9 @@
     "main": [
       "io.github.tropheusj.tiny_tracks.TinyTracks"
     ],
+    "client": [
+      "io.github.tropheusj.tiny_tracks.TinyTracksClient"
+    ],
     "fabric-datagen": [
       "io.github.tropheusj.tiny_tracks.TinyTracksData"
     ]

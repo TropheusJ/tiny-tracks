@@ -55,6 +55,7 @@ dependencies {
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
 	modImplementation(include("com.tterrag.registrate:Registrate:${project.registrate_version}"))
 	modImplementation(include("com.jozufozu.flywheel:Flywheel-Fabric:${project.flywheel_version}"))
+	modImplementation(include("maven.modrinth:jsonem:${project.jsonem_version}"))
 }
 
 loom {

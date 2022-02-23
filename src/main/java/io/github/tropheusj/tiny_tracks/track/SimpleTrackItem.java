@@ -1,14 +1,10 @@
 package io.github.tropheusj.tiny_tracks.track;
 
-import com.tterrag.registrate.providers.DataGenContext;
-import com.tterrag.registrate.providers.RegistrateItemModelProvider;
-
-import io.github.tropheusj.tiny_tracks.TinyTracks;
 import io.github.tropheusj.tiny_tracks.track.SimpleTrackBlock.Shape;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -32,9 +28,5 @@ public class SimpleTrackItem extends BlockItem {
 		List<Direction> connections = SimpleTrackBlock.getConnections(level, clicked, facing);
 		BlockState state = Shape.fromDirections(connections).toState();
 		return state.canSurvive(level, clicked) ? state : null;
-	}
-
-	public static void modelGen(DataGenContext<Item, SimpleTrackItem> ctx, RegistrateItemModelProvider prov) {
-		prov.generated(ctx, TinyTracks.id("item/" + ctx.getName()));
 	}
 }

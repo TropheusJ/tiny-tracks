@@ -1,6 +1,5 @@
-package io.github.tropheusj.tiny_tracks;
+package io.github.tropheusj.tiny_tracks.registry;
 
-import com.tterrag.registrate.Registrate;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
 import io.github.tropheusj.tiny_tracks.track.SimpleTrackBlock;
@@ -8,20 +7,19 @@ import io.github.tropheusj.tiny_tracks.track.SimpleTrackItem;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.material.Material;
 
-public class TinyTracksRegistry {
-	public static final Registrate REGISTRATE = Registrate.create(TinyTracks.ID);
+import static io.github.tropheusj.tiny_tracks.TinyTracks.REGISTRATE;
 
+public class TinyTracksBlocks {
 	public static final BlockEntry<SimpleTrackBlock> SIMPLE_TRACK = REGISTRATE.block("simple_track", SimpleTrackBlock::new)
 			.initialProperties(Material.DECORATION)
-			.properties(p -> p.strength(0.7F).sound(SoundType.METAL))
+			.properties(p -> p.strength(0.4F).sound(SoundType.METAL))
 			.lang("Track")
 			.item(SimpleTrackItem::new)
-			.model(SimpleTrackItem::modelGen)
+			.defaultModel()
 			.build()
 			.blockstate(SimpleTrackBlock::stateGen)
 			.register();
 
 	public static void init() {
-		REGISTRATE.register();
 	}
 }

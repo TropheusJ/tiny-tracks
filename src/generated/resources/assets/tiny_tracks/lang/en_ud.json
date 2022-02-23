@@ -1,3 +1,5 @@
 {
-  "block.tiny_tracks.simple_track": "\u029E\u0254\u0250\u0279\u27D8"
+  "block.tiny_tracks.simple_track": "\u029E\u0254\u0250\u0279\u27D8",
+  "entity.tiny_tracks.train": "u\u0131\u0250\u0279\u27D8",
+  "item.tiny_tracks.train": "u\u0131\u0250\u0279\u27D8"
 }

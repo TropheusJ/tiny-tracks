@@ -22,7 +22,7 @@ import java.util.function.Function;
  */
 public class VoxelShaper {
 
-	private Map<Direction, VoxelShape> shapes = new HashMap<>();
+	private final Map<Direction, VoxelShape> shapes = new HashMap<>();
 
 	public VoxelShape get(Direction direction) {
 		return shapes.get(direction);
