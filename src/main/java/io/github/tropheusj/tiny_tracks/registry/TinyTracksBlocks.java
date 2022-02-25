@@ -14,9 +14,6 @@ public class TinyTracksBlocks {
 			.initialProperties(Material.DECORATION)
 			.properties(p -> p.strength(0.4F).sound(SoundType.METAL))
 			.lang("Track")
-			.item(SimpleTrackItem::new)
-			.defaultModel()
-			.build()
 			.blockstate(SimpleTrackBlock::stateGen)
 			.register();
 

@@ -1,13 +1,15 @@
 package io.github.tropheusj.tiny_tracks.track.network;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 import io.github.tropheusj.tiny_tracks.TinyTracks;
-import io.github.tropheusj.tiny_tracks.track.BaseTrackBlock;
-import io.github.tropheusj.tiny_tracks.track.connection.WorldlyTrackSegment;
-import net.minecraft.network.FriendlyByteBuf;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackSegment;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map.Entry;
+import java.util.Random;
 
 /**
  * A track network represents a graph of track segments.
@@ -16,34 +18,54 @@ import java.util.List;
  * allow for pathfinding once implemented.
  */
 public class TrackNetwork {
-	public final List<TrackNode> nodes = new ArrayList<>();
-	public final List<TrackEdge> edges = new ArrayList<>();
+	public static final int MAX_ITERATIONS = 10_000;
+	public final Multimap<BlockPos, TrackSegment> segments = HashMultimap.create();
+	public final Level level;
+	public final float r;
+	public final float g;
+	public final float b;
 	private boolean removed = false;
+	private int iterations = 0;
+
+	public TrackNetwork(Level level) {
+		this.level = level;
+		Random r = new Random();
+		this.r = r.nextFloat();
+		this.g = r.nextFloat();
+		this.b = r.nextFloat();
+	}
 
 	/**
-	 * Starting form the given segment, find all connections and reform this network.
+	 * Starting from the given segment, find all connections and reform this network.
 	 */
-	public void recalculate(WorldlyTrackSegment start) {
+	public void recalculate(TrackSegment startSegment, BlockPos startPos) {
 		if (removed) {
 			TinyTracks.LOGGER.warn("tried to recalculate a removed network!");
 			return;
 		}
-		nodes.clear();
-		edges.clear();
-		if (!(start.getState().getBlock() instanceof BaseTrackBlock startTrack)) {
-			TinyTracks.LOGGER.error("Tried to calculate a WorldlyTrackSegment whose block is not a TrackBlock");
+		segments.clear();
+		iterations = 0;
+		segments.put(startPos, startSegment);
+		doRecalculate(startSegment, startPos);
+	}
+
+	/**
+	 * Recursively find all connections and add them to the network.
+	 */
+	private void doRecalculate(TrackSegment segment, BlockPos pos) {
+		if (iterations > MAX_ITERATIONS) {
+			TinyTracks.LOGGER.error("Network too complex!");
 			return;
 		}
-
-		TrackNode startNode = new TrackNode(start);
-		nodes.add(startNode);
-
-		for (WorldlyTrackSegment connection : start.findConnections()) {
-			TrackNode node = new TrackNode(connection);
-//			if (!tracks.contains(node)) {
-//				tracks.add(connection);
-//				recalculate(connection);
-//			}
+		iterations++;
+		Multimap<BlockPos, TrackSegment> connections = segment.getConnections(pos, level);
+		for (Entry<BlockPos, TrackSegment> entry : connections.entries()) {
+			BlockPos connectedPos = entry.getKey();
+			TrackSegment connectedSegment = entry.getValue();
+			if (!segments.containsEntry(connectedPos, connectedSegment)) {
+				segments.put(connectedPos, connectedSegment);
+				doRecalculate(connectedSegment, connectedPos);
+			}
 		}
 	}
 
@@ -51,11 +73,11 @@ public class TrackNetwork {
 	 * Called after this network has already been removed from its manager's list of networks
 	 */
 	public void invalidate() {
-//		tracks.clear();
+		segments.clear();
 		removed = true;
 	}
 
-	public boolean contains(WorldlyTrackSegment segment) {
-		return false;//tracks.contains(segment);
+	public boolean contains(TrackSegment segment, BlockPos pos) {
+		return segments.containsEntry(pos, segment);
 	}
 }

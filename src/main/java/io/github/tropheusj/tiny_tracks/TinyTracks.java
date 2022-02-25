@@ -8,6 +8,8 @@ import io.github.tropheusj.tiny_tracks.registry.TinyTracksItems;
 import io.github.tropheusj.tiny_tracks.registry.registries.CarriageTypes;
 import io.github.tropheusj.tiny_tracks.registry.registries.TrackTypes;
 import io.github.tropheusj.tiny_tracks.registry.registries.TrainSets;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackConnection;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackSegment;
 import io.github.tropheusj.tiny_tracks.track.network.TrackNetworkManager;
 import net.fabricmc.api.ModInitializer;
 
@@ -28,6 +30,7 @@ public class TinyTracks implements ModInitializer {
 	public void onInitialize() {
 		register();
 		ServerTickEvents.END_WORLD_TICK.register(TrackNetworkManager::tick);
+
 	}
 
 	private static void register() {

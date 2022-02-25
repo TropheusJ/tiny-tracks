@@ -7,15 +7,18 @@ import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import io.github.tropheusj.tiny_tracks.TinyTracks;
 import io.github.tropheusj.tiny_tracks.registry.TinyTracksBlocks;
 import io.github.tropheusj.tiny_tracks.track.connection.TrackConnection;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackConnectionPoint;
 import io.github.tropheusj.tiny_tracks.track.connection.TrackSegment;
 import io.github.tropheusj.tiny_tracks.util.VoxelShaper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
@@ -32,8 +35,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static net.minecraft.core.Direction.*;
 import static net.minecraft.core.Direction.Plane.HORIZONTAL;
@@ -61,16 +66,9 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 
 	@Override
 	public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-//		if (!canSurvive(state, level, pos) && level instanceof ServerLevel server) {
-//			server.destroyBlock(pos, true);
-//			return;
-//		}
-//		List<Direction> connections = getConnections(level, pos, NORTH);
-//		Shape current = state.getValue(SHAPE);
-//		Shape newShape = Shape.fromDirections(connections);
-//		if (current != newShape && !level.isClientSide()) {
-//			level.setBlock(pos, state.setValue(SHAPE, newShape), UPDATE_ALL);
-//		}
+		if (level instanceof ServerLevel server && !canSurvive(state, level, pos)) {
+			server.destroyBlock(pos, true);
+		}
 	}
 
 	@Override
@@ -93,29 +91,17 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 		return Block.canSupportRigidBlock(level, pos.below());
 	}
 
-	public static List<Direction> getConnections(Level level, BlockPos pos, @Nullable Direction fallback) {
-		List<Direction> connections = new ArrayList<>(4);
-
-		for (Direction direction : HORIZONTAL) {
-			TrackConnection c = TrackConnection.get(direction);
-			BlockPos neighborPos = pos.relative(direction);
-			BlockState neighbor = level.getBlockState(neighborPos);
-			if (neighbor.getBlock() instanceof TrackBlock track) {
-				if (track.connectsWith(c, neighbor)) {
-					connections.add(direction);
-				}
-			}
+	@Override
+	public BlockState rotate(BlockState state, Rotation rotation) {
+		Shape shape = state.getValue(SHAPE);
+		if (shape == Shape.CROSS) return state;
+		List<Direction> directions = new ArrayList<>();
+		for (Direction dir : shape.connections) {
+			Direction newDir = rotation.rotate(dir);
+			directions.add(newDir);
 		}
-
-		if (connections.isEmpty() && fallback != null) {
-			connections.add(fallback);
-		}
-
-		if (connections.size() == 1) { // 1 connection, face away from it
-			connections.add(connections.get(0).getOpposite());
-		}
-
-		return connections;
+		Shape newShape = Shape.fromDirections(directions);
+		return state.setValue(SHAPE, newShape);
 	}
 
 	public static void stateGen(DataGenContext<Block, SimpleTrackBlock> ctx, RegistrateBlockstateProvider prov) {
@@ -130,7 +116,7 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 	}
 
 	@Override
-	public List<TrackSegment> getTrackSegments(BlockState state) {
+	public List<TrackSegment> getTrackSegments(BlockPos pos, BlockState state, Level level) {
 		return state.getValue(SHAPE).trackSegments;
 	}
 
@@ -166,7 +152,7 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 				}
 				TrackConnection connection1 = TrackConnection.get(connections[0]);
 				TrackConnection connection2 = TrackConnection.get(connections[1]);
-				trackSegments = ImmutableList.of(new TrackSegment(connection1, connection2));
+				trackSegments = ImmutableList.of(TrackSegment.get(connection1, connection2));
 			} else if (connections.length == 3) {
 				type = ShapeType.T;
 
@@ -174,25 +160,36 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 				TrackConnection connection2 = TrackConnection.get(connections[1]);
 				TrackConnection connection3 = TrackConnection.get(connections[2]);
 				// all 3 connections can connect to each other
-				TrackSegment one = new TrackSegment(connection1, connection2);
-				TrackSegment two = new TrackSegment(connection2, connection3);
-				TrackSegment three = new TrackSegment(connection1, connection3);
+				TrackSegment one = TrackSegment.get(connection1, connection2);
+				TrackSegment two = TrackSegment.get(connection2, connection3);
+				TrackSegment three = TrackSegment.get(connection1, connection3);
 				trackSegments = ImmutableList.of(one, two, three);
 			} else if (connections.length == 4) {
 				type = ShapeType.CROSS;
 				// tracks cross and don't turn, 2 individual connections
 				TrackConnection connection1 = TrackConnection.get(NORTH);
 				TrackConnection connection2 = TrackConnection.get(SOUTH);
-				TrackSegment one = new TrackSegment(connection1, connection2); // north <-> south
+				TrackSegment one = TrackSegment.get(connection1, connection2); // north <-> south
 
 				TrackConnection connection3 = TrackConnection.get(EAST);
 				TrackConnection connection4 = TrackConnection.get(WEST);
-				TrackSegment two = new TrackSegment(connection3, connection4); // east <-> west
+				TrackSegment two = TrackSegment.get(connection3, connection4); // east <-> west
 
 				trackSegments = ImmutableList.of(one, two);
 			} else {
 				throw new IllegalArgumentException("Invalid connections for shape: " + Arrays.toString(connections));
 			}
+		}
+
+		public Shape with(TrackConnection connection) {
+			Direction actual = connection.face.getOpposite();
+			if (this.has(actual)) {
+				return this;
+			}
+			List<Direction> directions = new ArrayList<>();
+			directions.add(actual);
+			directions.addAll(List.of(connections));
+			return fromDirections(directions);
 		}
 
 		public boolean has(Direction d) {
@@ -221,8 +218,7 @@ public class SimpleTrackBlock extends BaseTrackBlock implements SimpleWaterlogge
 				}
 				return shape;
 			}
-			TinyTracks.LOGGER.warn("Could not find shape for directions {}", directions);
-			new Throwable().printStackTrace();
+			TinyTracks.LOGGER.error("Could not find shape for directions {}", directions);
 			return NORTH_SOUTH;
 		}
 	}

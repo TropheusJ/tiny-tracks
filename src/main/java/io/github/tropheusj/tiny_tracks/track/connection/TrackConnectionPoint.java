@@ -9,13 +9,16 @@ import java.util.Locale;
  * Tracks can connect to one of 6 points on each of a block's 4 horizontal faces.
  */
 public enum TrackConnectionPoint {
+	// these points are based on the center of a block being (0, 0).
+	// they are then translated to the correct position.
+	// 0.5 - center of block
 	// 0.3 -> offset east/left
 	// -0.3 -> offset west/right
 	// 0.6 -> offset up for top points
 	// 0.5 -> offset south; all points are based on south block face, so add half a block
-	TOP_LEFT(new Vec3(0.3, 0.6, 0.5)),
-	TOP_MIDDLE(new Vec3(0, 0.6, 0.5)),
-	TOP_RIGHT(new Vec3(-0.3, 0.6, 0.5)),
+	TOP_LEFT(new Vec3(0.3, 0.5, 0.5)),
+	TOP_MIDDLE(new Vec3(0, 0.5, 0.5)),
+	TOP_RIGHT(new Vec3(-0.3, 0.5, 0.5)),
 	BOTTOM_LEFT(new Vec3(0.3, 0, 0.5)),
 	BOTTOM_MIDDLE(new Vec3(0, 0, 0.5)),
 	BOTTOM_RIGHT(new Vec3(-0.3, 0, 0.5));
@@ -26,10 +29,10 @@ public enum TrackConnectionPoint {
 	public final Vec3 westPos;
 
 	TrackConnectionPoint(Vec3 pos) {
-		this.southPos = pos;
-		eastPos = southPos.yRot((float) (Math.PI / 2));
-		northPos = southPos.yRot((float) (Math.PI));
-		westPos = southPos.yRot((float) ((Math.PI * 3) / 2));
+		this.southPos = pos.add(0.5, 0, 0.4);
+		this.eastPos = pos.yRot((float) (Math.PI / 2)).add(0.4, 0, 0.5);
+		this.northPos = pos.yRot((float) (Math.PI)).add(0.5, 0, 0.6);
+		this.westPos = pos.yRot((float) ((Math.PI * 3) / 2)).add(0.6, 0, 0.5);
 	}
 
 	public Vec3 getPos(Direction rotation) {

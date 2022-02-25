@@ -20,7 +20,7 @@ import java.util.Objects;
  */
 public class TrackConnection {
 	private static final Table<TrackConnectionPoint, Direction, TrackConnection> TABLE = HashBasedTable.create(6, 4);
-	private static final TrackConnection[] VALUES = new TrackConnection[36];
+	public static final TrackConnection[] VALUES = new TrackConnection[6 * 4];
 
 	public final TrackConnectionPoint point;
 	public final Direction face;
@@ -67,18 +67,17 @@ public class TrackConnection {
 
 	@Nullable
 	public TrackConnectionPoint connectingPoint(TrackConnection other) {
+//		if (this == other) return this.point;
 		// if the two connections' faces are not in the same place, they cannot connect
 		if (this.face.getOpposite() != other.face) {
 			return null;
 		}
-		TrackConnectionPoint point = this.point;
-		TrackConnectionPoint otherPoint = other.point;
 		// if the two connections' points are not the same, they cannot connect
 		// for two blocks facing each other, their points will be mirrored, so we need to account for that
-		if (point.getMirroredForConnection() != otherPoint) {
+		if (this.point != other.point.getMirroredForConnection()) {
 			return null;
 		}
-		return point;
+		return this.point;
 	}
 
 	public boolean canConnect(TrackConnection other) {

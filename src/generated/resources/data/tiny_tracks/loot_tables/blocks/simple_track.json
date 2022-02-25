@@ -7,7 +7,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "tiny_tracks:simple_track"
+          "name": "tiny_tracks:curved_track"
         }
       ],
       "conditions": [

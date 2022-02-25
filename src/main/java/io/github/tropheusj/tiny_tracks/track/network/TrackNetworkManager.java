@@ -1,20 +1,25 @@
 package io.github.tropheusj.tiny_tracks.track.network;
 
+import com.google.common.collect.Multimap;
+
 import io.github.tropheusj.tiny_tracks.TinyTracks;
 
-import io.github.tropheusj.tiny_tracks.track.connection.WorldlyTrackSegment;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackSegment;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+import org.checkerframework.checker.units.qual.K;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.system.CallbackI.V;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Each instance of this class is linked to a Level instance.
@@ -26,7 +31,7 @@ import java.util.Map;
 public class TrackNetworkManager {
 	public static final ResourceLocation TRACK_ADDED_PACKET = TinyTracks.id("track_added");
 	public static final ResourceLocation TRACK_REMOVED_PACKET = TinyTracks.id("track_removed");
-	public static Map<Level, TrackNetworkManager> ALL = new HashMap<>(3);
+	public static Map<Level, TrackNetworkManager> ALL = new HashMap<>(4);
 
 	public final List<TrackNetwork> networks = new ArrayList<>();
 	public final Level level;
@@ -49,9 +54,9 @@ public class TrackNetworkManager {
 	}
 
 	@Nullable
-	public TrackNetwork get(WorldlyTrackSegment segment) {
+	public TrackNetwork get(TrackSegment segment, BlockPos pos) {
 		for (TrackNetwork network : this.networks) {
-			if (network.contains(segment)) {
+			if (network.contains(segment, pos)) {
 				return network;
 			}
 		}
@@ -59,7 +64,7 @@ public class TrackNetworkManager {
 	}
 
 	private TrackNetwork create() {
-		TrackNetwork network = new TrackNetwork();
+		TrackNetwork network = new TrackNetwork(level);
 		networks.add(network);
 		return network;
 	}
@@ -68,8 +73,8 @@ public class TrackNetworkManager {
 	 * When a track segment is added, it must be given a network. This can be done
 	 * through creating a new one or expanding a pre-existing one.
 	 */
-	private void handleAdd(WorldlyTrackSegment added, TrackNetwork toAdd) {
-		toAdd.recalculate(added);
+	private void handleAdd(TrackSegment added, BlockPos pos, TrackNetwork toAdd) {
+		toAdd.recalculate(added, pos);
 	}
 
 	/**
@@ -78,29 +83,27 @@ public class TrackNetworkManager {
 	 * @param segment The track segment added causing the networks to combine
 	 * @param toCombine The track networks to combine
 	 */
-	private void handleCombine(WorldlyTrackSegment segment, List<TrackNetwork> toCombine) {
+	private void handleCombine(TrackSegment segment, BlockPos pos, List<TrackNetwork> toCombine) {
 		if (toCombine.size() == 0) {
 			TinyTracks.LOGGER.warn("tried to combine 0 networks?");
 			return;
 		}
 		TrackNetwork base = toCombine.get(0);
+		base.segments.put(pos, segment);
 		for (TrackNetwork network : toCombine) {
 			if (network != base) {
-//				base.tracks.addAll(network.tracks);
+				base.segments.putAll(network.segments);
 				remove(network);
 			}
 		}
-//		base.tracks.add(segment);
 	}
 
 	/**
-	 * When a track segment is removed, it's network must be recalculated.
-	 * The network can either be removed entirely, split into smaller ones, or
-	 * simply recalculated without the missing segment.
+	 * When a TrackSegment with one connection is removed, there is no need to recalculate
+	 * the network; the edge connection is simply removed.
 	 */
-	private void handleRemove(WorldlyTrackSegment removed, TrackNetwork toRemove) {
-		List<WorldlyTrackSegment> adjacentSegments = removed.findConnections();
-
+	private void handleRemove(TrackSegment removed, BlockPos pos, TrackNetwork toRemove) {
+		toRemove.segments.remove(pos, removed);
 	}
 
 	/**
@@ -108,8 +111,28 @@ public class TrackNetworkManager {
 	 * smaller ones. For example, take a line of 3 tracks. Remove the middle track block.
 	 * The two edge segments will now each become their own network.
 	 */
-	private void handleSplit(WorldlyTrackSegment removed, TrackNetwork toSplit) {
-
+	private void handleSplit(TrackSegment removed, BlockPos pos, Multimap<BlockPos, TrackSegment> connections, TrackNetwork toSplit) {
+		Entry<BlockPos, TrackSegment> first = getFirstEntry(connections);
+		toSplit.recalculate(first.getValue(), first.getKey());
+		List<TrackNetwork> splitNetworks = new ArrayList<>();
+		splitNetworks.add(toSplit);
+		for (Entry<BlockPos, TrackSegment> entry : connections.entries()) {
+			TrackSegment segment = entry.getValue();
+			// skip the first entry, it has already been handled
+			if (!entry.equals(first)) {
+				BlockPos segmentPos = entry.getKey();
+				// these networks have already been recalculated.
+				// if they do not contain the connection, another split is needed.
+				TrackNetwork newSplit = null;
+				for (TrackNetwork network : splitNetworks) {
+					if (!network.contains(segment, segmentPos)) {
+						newSplit = create();
+						newSplit.recalculate(segment, segmentPos);
+					}
+				}
+				if (newSplit != null) splitNetworks.add(newSplit);
+			}
+		}
 	}
 
 	/**
@@ -123,31 +146,30 @@ public class TrackNetworkManager {
 	/**
 	 * Should only be called server-side.
 	 */
-	public static void trackPlace(WorldlyTrackSegment placed) {
-		Level level = placed.level();
+	public static void trackPlace(TrackSegment placed, BlockPos pos, Level level) {
 		TrackNetworkManager manager = ALL.get(level);
 		if (manager == null) {
 			warnMissing(level);
 			return;
 		}
-		List<WorldlyTrackSegment> connections = placed.findConnections();
+		Multimap<BlockPos, TrackSegment> connections = placed.getConnections(pos, level);
 		if (connections.isEmpty()) {
 			// create new network
-			manager.handleAdd(placed, manager.create());
+			manager.handleAdd(placed, pos, manager.create());
 		} else if (connections.size() == 1) {
 			// add to existing
-			WorldlyTrackSegment connected = connections.get(0);
-			TrackNetwork network = connected.getNetwork();
+			Entry<BlockPos, TrackSegment> entry = getFirstEntry(connections);
+			TrackNetwork network = manager.get(entry.getValue(), entry.getKey());
 			if (network == null) {
 				TinyTracks.LOGGER.error("Tried to connect to a segment with no network!");
 				return;
 			}
-			manager.handleAdd(placed, network);
+			manager.handleAdd(placed, pos, network);
 		} else {
 			// check how many networks are being connected to
 			List<TrackNetwork> networks = new ArrayList<>();
-			for (WorldlyTrackSegment segment : connections) {
-				TrackNetwork network = segment.getNetwork();
+			for (Entry<BlockPos, TrackSegment> entry : connections.entries()) {
+				TrackNetwork network = manager.get(entry.getValue(), entry.getKey());
 				if (network == null) {
 					TinyTracks.LOGGER.error("Tried to connect to a segment with no network!");
 					return;
@@ -158,14 +180,14 @@ public class TrackNetworkManager {
 			}
 			if (networks.size() == 1) {
 				TrackNetwork network = networks.get(0);
-				manager.handleAdd(placed, network);
+				manager.handleAdd(placed, pos, network);
 			} else {
-				manager.handleCombine(placed, networks);
+				manager.handleCombine(placed, pos, networks);
 			}
 		}
 		level.players().forEach(player -> {
 			if (player instanceof ServerPlayer serverPlayer) {
-				ServerPlayNetworking.send(serverPlayer, TRACK_ADDED_PACKET, placed.toBuf());
+				ServerPlayNetworking.send(serverPlayer, TRACK_ADDED_PACKET, placed.toBuf().writeBlockPos(pos));
 			}
 		});
 	}
@@ -173,37 +195,42 @@ public class TrackNetworkManager {
 	/**
 	 * Should only be called server-side.
 	 */
-	public static void trackRemoved(WorldlyTrackSegment removed) {
-		Level level = removed.level();
+	public static void trackRemoved(TrackSegment removed, BlockPos pos, Level level) {
 		TrackNetworkManager manager = ALL.get(level);
 		if (manager == null) {
 			warnMissing(level);
 			return;
 		}
 		// find network of this segment
-		TrackNetwork network = removed.getNetwork();
+		TrackNetwork network = manager.get(removed, pos);
 		if (network == null) {
 			TinyTracks.LOGGER.error("removed track already has no network!");
 			return;
 		}
 		// check if the network must split
-		List<WorldlyTrackSegment> adjacent = removed.findConnections();
-		if (adjacent.size() == 0) { // no connections - simply kill the network
+		Multimap<BlockPos, TrackSegment> connections = removed.getConnections(pos, level);
+		if (connections.size() == 0) { // no connections - simply kill the network
 			network.invalidate();
-		} else if (adjacent.size() == 1) { // exactly 1 connecting segment - can't possibly split into multiple networks
-			manager.handleRemove(removed, network);
+		} else if (connections.size() == 1) { // exactly 1 connecting segment - can't possibly split into multiple networks
+			manager.handleRemove(removed, pos, network);
 		} else { // multiple connections - might need to split
-			// check if we actually need to split
-			manager.handleSplit(removed, network);
+			manager.handleSplit(removed, pos, connections, network);
 		}
 		level.players().forEach(player -> {
 			if (player instanceof ServerPlayer serverPlayer) {
-				ServerPlayNetworking.send(serverPlayer, TRACK_REMOVED_PACKET, removed.toBuf());
+				ServerPlayNetworking.send(serverPlayer, TRACK_REMOVED_PACKET, removed.toBuf().writeBlockPos(pos));
 			}
 		});
 	}
 
 	public static void warnMissing(Level level) {
 		TinyTracks.LOGGER.warn("Track Network Manager not found for level {}", level.dimension().location());
+	}
+
+	public static <K, V> Entry<K, V> getFirstEntry(Multimap<K, V> map) {
+		for (Entry<K, V> entry : map.entries()) {
+			return entry;
+		}
+		throw new RuntimeException("Map contains no entries!");
 	}
 }

@@ -1,9 +1,10 @@
 package io.github.tropheusj.tiny_tracks.track;
 
-import io.github.tropheusj.tiny_tracks.track.connection.WorldlyTrackSegment;
-import io.github.tropheusj.tiny_tracks.train.TrainEntity;
-
-import java.util.List;
+import io.github.tropheusj.tiny_tracks.track.connection.TrackSegment;
+import io.github.tropheusj.tiny_tracks.train.Train;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * A Track Type is, well, a type of track. All track blocks must be
@@ -14,10 +15,9 @@ import java.util.List;
  */
 public class TrackType {
 	/**
-	 * Tick method called when a train is on this track.
-	 * @param trains list of train entities currently on this track
+	 * Tick method called when a train is on a TrackSegment of this type.
 	 */
-	public void tickWithTrain(List<TrainEntity> trains, WorldlyTrackSegment track) {
+	public void tickWithTrain(Train train, TrackSegment segment, BlockPos pos, BlockState state, Level level) {
 	}
 
 	public float maxSpeed() {
