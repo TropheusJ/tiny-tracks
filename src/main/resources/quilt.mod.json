@@ -2,23 +2,23 @@
 	"schema_version": 1,
 	"quilt_loader": {
 		"group": "io.github.tropheusj",
-		"id": "modid",
+		"id": "tiny_tracks",
 		"version": "${version}",
 		"metadata": {
-			"name": "Modid",
+			"name": "Tiny Tracks",
 			"description": "A short description of your mod.",
 			"contributors": {
 				"Tropheus Jay": "Owner"
 			},
 			"contact": {
-				"issues": "https://github.com/TropheusJ/quilt-template-mod/issues",
-				"sources": "https://github.com/TropheusJ/quilt-template-mod"
+				"issues": "https://github.com/TropheusJ/tiny-tracks/issues",
+				"sources": "https://github.com/TropheusJ/tiny-tracks"
 			},
-			"icon": "assets/modid/icon.png"
+			"icon": "assets/tiny_tracks/icon.png"
 		},
 		"intermediate_mappings": "net.fabricmc:intermediary",
 		"entrypoints": {
-			"init": "io.github.tropheusj.modid.ExampleMod"
+			"init": "io.github.tropheusj.tiny_tracks.TinyTracks"
 		},
 		"depends": [
 			{
@@ -35,5 +35,5 @@
 			}
 		]
 	},
-	"mixin": "modid.mixins.json"
+	"mixin": "tiny_tracks.mixins.json"
 }
